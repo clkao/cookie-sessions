@@ -414,6 +414,55 @@ exports['writeHead doesnt write cookie if none exists and session is undefined']
     sessions(s)(req, res, next);
 };
 
+exports['writeHead DOES write cookie if none exists and session is undefined BUT atleastEmpty is true'] = function(test){
+    test.expect(6);
+
+    var s = {
+        session_key:'_node',
+        secret: 'secret',
+        timeout: 86400000,
+        emptySession: true
+    };
+    var req = {headers: {}, url: '/'};
+    var res = {
+        writeHead: function(code, headers){
+            test.equals(
+                headers['Set-Cookie'],
+                '_node=serialized_session; ' +
+                'expires=expiry_date; ' +
+                'max-age=86400; ' +
+                'path=/; HttpOnly'
+            );
+            test.equals(headers['original'], 'header');
+        }
+    };
+
+    var serialize = sessions.serialize;
+    sessions.serialize = function(secret, data){
+        test.equals(secret, 'secret', 'serialize called with secret');
+        test.same(data, {test:'test'}, 'serialize called with session data');
+        return 'serialized_session';
+    };
+
+    var expires = sessions.expires;
+    sessions.expires = function(timeout){
+        test.equals(timeout, s.timeout);
+        return 'expiry_date';
+    };
+
+    var next = function(){
+        test.ok(true, 'chain.next called');
+        req.session = {test:'test'};
+        res.writeHead(200, {'original':'header'});
+        // restore copied functions
+        sessions.serialize = serialize;
+        sessions.expires = expires;
+        test.done();
+    };
+    sessions(s)(req, res, next);
+};
+
+
 exports['writeHead writes empty cookie with immediate expiration if session is undefined'] = function(test){
     test.expect(4);
 
@@ -457,6 +506,7 @@ exports['writeHead writes empty cookie with immediate expiration if session is u
     };
     sessions(s)(req, res, next);
 };
+
 
 exports['onInit secret set'] = function(test){
     test.expect(0);
@@ -893,3 +943,5 @@ exports['onError: data too long'] = function(test){
     });
     sessions.serialize("test", data);
 };
+
+

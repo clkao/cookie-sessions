@@ -23,6 +23,8 @@ exports = module.exports = (settings) ->
         useExpires: true
         # use 'HttpOnly'?
         useHttpOnly: true
+        # return empty session (rather than leaving req.session undefined) if session cookie not found or corrupt?
+        emptySession: false
         # error handler
         onError: null
 
@@ -50,6 +52,9 @@ exports = module.exports = (settings) ->
 
         # Read session data from a request and store it in req.session
         req.session = exports.readSession(s.session_key, s.secret, s.timeout, req)
+        # make it an empty session if client asked for this
+        if not req.session and s.emptySession
+            req.session = {}
 
         # proxy writeHead to add cookie to response
         _writeHead = res.writeHead
