@@ -129,7 +129,7 @@ exports.readSession = (session_key, secret, timeout, req) ->
     if session_key of cookies and cookies[session_key]
         return exports.deserialize(secret, timeout, cookies[session_key])
     else
-        return undefined;
+        return {}
 
 
 # read cookies from request object
